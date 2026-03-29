@@ -30,6 +30,7 @@ from space_service import SpaceService
 from finance_service import FinanceService
 from calendar_service import CalendarService
 from rss_service import RSSService
+from ai_service import AIService
 
 # ── Логирование ─────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -42,6 +43,7 @@ ss = SpaceService()
 fs = FinanceService()
 cs = CalendarService()
 rs = RSSService()
+ai = AIService()
 router = Router()
 
 # In-memory хранилище избранных: {user_id: [city1, city2, ...]}
@@ -137,6 +139,7 @@ class UserState(StatesGroup):
     # Настройки
     waiting_home_city = State()
     waiting_news_region = State()
+    waiting_ai_question = State()
 
 
 # ── Throttling Middleware ────────────────────────────────────────────────
@@ -201,9 +204,9 @@ def main_keyboard() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text="🌤 Погода"), KeyboardButton(text="🚀 Космос")],
             [KeyboardButton(text="📰 Новости"), KeyboardButton(text="📈 Финансы")],
-            [KeyboardButton(text="📍 Геолокация"), KeyboardButton(text="⭐ Избранное")],
-            [KeyboardButton(text="🗓 Календарь"), KeyboardButton(text="⚙️ Настройки")],
-            [KeyboardButton(text="ℹ️ Помощь")],
+            [KeyboardButton(text="🤖 Спроси ИИ"), KeyboardButton(text="⭐ Избранное")],
+            [KeyboardButton(text="📍 Геолокация"), KeyboardButton(text="🗓 Календарь")],
+            [KeyboardButton(text="⚙️ Настройки"), KeyboardButton(text="ℹ️ Помощь")],
         ],
         resize_keyboard=True,
     )
@@ -237,7 +240,7 @@ def news_keyboard() -> ReplyKeyboardMarkup:
     """Клавиатура управления новостями."""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🔥 Топ новости")],
+            [KeyboardButton(text="🔥 Топ новости"), KeyboardButton(text="⚡️ AI-Сводка дня")],
             [KeyboardButton(text="📡 RSS Ленты")],
             [KeyboardButton(text="🏠 Главное меню")],
         ],
@@ -445,6 +448,51 @@ async def nav_settings_menu(message: Message):
     await message.answer("⚙️ <b>Настройки SkyPulse</b>\n\nЗдесь вы можете персонализировать бота под себя:", reply_markup=settings_keyboard())
 
 
+# ── AI Ассистент ────────────────────────────────────────────────────────
+
+@router.message(F.text == "🤖 Спроси ИИ")
+async def ai_ask_start(message: Message, state: FSMContext):
+    await state.set_state(UserState.waiting_ai_question)
+    await message.answer(
+        "🤖 <b>Я слушаю!</b>\n"
+        "Задайте любой вопрос. Я использую сверхбыстрый интеллект Cerebras, чтобы ответить мгновенно.",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="🏠 Главное меню")]],
+            resize_keyboard=True
+        )
+    )
+
+@router.message(UserState.waiting_ai_question)
+async def ai_process_question(message: Message, state: FSMContext):
+    if message.text == "🏠 Главное меню":
+        await nav_main_menu(message, state)
+        return
+
+    wait_msg = await message.answer("⏳ Думаю...")
+    response = await ai.get_ai_response(message.text)
+    await wait_msg.edit_text(response, parse_mode=ParseMode.MARKDOWN)
+    # Оставляем в состоянии вопроса, чтобы можно было переписываться дальше
+    await message.answer("👇 Можете задать еще один вопрос или вернуться в меню.", reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="🏠 Главное меню")]],
+            resize_keyboard=True
+        ))
+
+# ── AI Сводка новостей ──────────────────────────────────────────────────
+
+@router.message(F.text == "⚡️ AI-Сводка дня")
+async def ai_news_summary(message: Message):
+    wait_msg = await message.answer("⏳ Анализирую главные новости дня...")
+    
+    # Берем новости из категории general для сводки
+    data = await ns.get_news_by_category("general")
+    if not data:
+        await wait_msg.edit_text("❌ Не удалось получить новости для анализа.")
+        return
+
+    text = await ns.format_news_summarized(data, "Главные новости")
+    await wait_msg.edit_text(text, disable_web_page_preview=True)
+
+
 @router.message(F.text == "🏠 Мой город")
 async def set_home_city_start(message: Message, state: FSMContext):
     uid = message.from_user.id
@@ -601,7 +649,15 @@ async def show_current(message: Message, state: FSMContext, city: str):
     }
 
     text = ws.format_current(data, units=u)
-    await wait_msg.edit_text(text, reply_markup=detail_inline(coord["lat"], coord["lon"]))
+    
+    # Добавляем умный совет от ИИ
+    temp = data["main"]["temp"]
+    desc = data["weather"][0]["description"]
+    advice = await ai.get_weather_advice(desc, temp)
+    
+    final_text = f"{text}\n\n🤖 <b>Совет от ИИ:</b>\n{advice}"
+    
+    await wait_msg.edit_text(final_text, reply_markup=detail_inline(coord["lat"], coord["lon"]))
     await message.answer("👇 Или выберите другое действие:", reply_markup=weather_keyboard())
 
 
@@ -661,7 +717,15 @@ async def handle_location(message: Message):
     }
 
     text = ws.format_current(data, units=u)
-    await wait_msg.edit_text(text, reply_markup=detail_inline(lat, lon))
+    
+    # Добавляем умный совет от ИИ
+    temp = data["main"]["temp"]
+    desc = data["weather"][0]["description"]
+    advice = await ai.get_weather_advice(desc, temp)
+    
+    final_text = f"{text}\n\n🤖 <b>Совет от ИИ:</b>\n{advice}"
+    
+    await wait_msg.edit_text(final_text, reply_markup=detail_inline(lat, lon))
 
 
 # ── Избранное ───────────────────────────────────────────────────────────

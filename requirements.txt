@@ -4,3 +4,4 @@ python-dotenv
 feedparser
 beautifulsoup4
 lxml
+cerebras-cloud-sdk

@@ -18,6 +18,9 @@ OWM_AIR_URL = f"{OWM_BASE}/air_pollution"
 OWM_GEO_URL = "https://api.openweathermap.org/geo/1.0/direct"
 OWM_ICON_URL = "https://openweathermap.org/img/wn/{}@2x.png"
 
+# Cerebras AI
+CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
+CEREBRAS_MODEL = "llama3.3-70b" # Или любая другая актуальная модель
 
 # Настройки по умолчанию
 DEFAULT_UNITS = "metric"

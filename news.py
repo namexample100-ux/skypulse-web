@@ -3,6 +3,7 @@
 import logging
 import asyncio
 from rss_service import RSSService
+from ai_service import AIService
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ RSS_CHANNELS = {
 class NewsService:
     def __init__(self):
         self.rss = RSSService()
+        self.ai = AIService()
 
     async def close(self):
         await self.rss.close()
@@ -137,4 +139,27 @@ class NewsService:
             lines.append(f"   <i>Источник: {src}</i>") # Теперь пишем источник под каждой новостью
             lines.append("")
         
+        return "\n".join(lines)
+
+    async def format_news_summarized(self, data: dict, category_title: str) -> str:
+        """Форматирует новости и добавляет AI-саммари."""
+        if not data or not data.get("articles"):
+            return "❌ Не удалось получить новости."
+
+        articles = data["articles"]
+        # Собираем текстовый блок для суммаризации
+        news_text = "\n".join([f"- {a['title']}" for a in articles])
+        
+        summary = await self.ai.summarize_news(news_text)
+        
+        lines = [f"<b>{category_title} (AI-Сводка)</b>", ""]
+        lines.append(f"🤖 <b>Кратко:</b>\n{summary}")
+        lines.append("")
+        lines.append("<i>Подробнее:</i>")
+        
+        for i, item in enumerate(articles, 1):
+            title = item.get("title", "Без заголовка")
+            link = item.get("link", "#")
+            lines.append(f"{i}. <a href='{link}'>{title}</a>")
+            
         return "\n".join(lines)
