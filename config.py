@@ -20,7 +20,7 @@ OWM_ICON_URL = "https://openweathermap.org/img/wn/{}@2x.png"
 
 # Cerebras AI
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "")
-CEREBRAS_MODEL = "llama3.3-70b" # Или любая другая актуальная модель
+CEREBRAS_MODEL = "llama-3.3-70b"  # Или: llama3.1-8b, qwen-3-32b, gpt-oss-120b
 
 # Настройки по умолчанию
 DEFAULT_UNITS = "metric"
