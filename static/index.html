@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SkyPulse</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c18;
+    --bg2: #0d1526;
+    --bg3: #111b35;
+    --card: #0f1930;
+    --border: rgba(99,179,237,0.12);
+    --accent: #4fc3f7;
+    --accent2: #7c83fd;
+    --accent3: #43e97b;
+    --warn: #ffa94d;
+    --danger: #ff6b6b;
+    --text: #e8f4fd;
+    --text2: #8bacc8;
+    --text3: #4a6a8a;
+    --glow: rgba(79,195,247,0.15);
+    --font-display: 'Unbounded', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow top */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(79,195,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 0 80px; }
+
+  /* ── Header ── */
+  .header {
+    padding: 24px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(8,12,24,0.9) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .logo span { font-weight: 300; }
+
+  .header-time {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+
+  /* ── Nav Tabs ── */
+  .nav {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 12px 20px;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,12,24,0.8);
+    backdrop-filter: blur(20px);
+    position: sticky;
+    top: 65px;
+    z-index: 99;
+  }
+
+  .nav::-webkit-scrollbar { display: none; }
+
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 8px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  .nav-btn:hover { color: var(--text2); border-color: rgba(99,179,237,0.3); }
+
+  .nav-btn.active {
+    background: linear-gradient(135deg, rgba(79,195,247,0.15), rgba(124,131,253,0.15));
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(79,195,247,0.15);
+  }
+
+  /* ── Sections ── */
+  .section { display: none; padding: 20px; animation: fadeIn 0.3s ease; }
+  .section.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.3;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 16px;
+  }
+
+  /* ── Search bar ── */
+  .search-wrap { position: relative; margin-bottom: 16px; }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 48px 12px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .search-input::placeholder { color: var(--text3); }
+
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,195,247,0.1);
+  }
+
+  .search-btn {
+    position: absolute;
+    right: 4px; top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    transition: opacity 0.2s;
+  }
+
+  .search-btn:hover { opacity: 0.85; }
+
+  /* ── Big temp display ── */
+  .weather-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .weather-emoji { font-size: 52px; line-height: 1; }
+
+  .weather-info { flex: 1; }
+
+  .weather-city {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .weather-temp {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .weather-desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 6px;
+    text-transform: capitalize;
+  }
+
+  /* ── Weather grid ── */
+  .weather-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .weather-stat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ── Action buttons ── */
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .action-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(79,195,247,0.05);
+  }
+
+  .action-btn .icon { font-size: 18px; }
+
+  /* ── News ── */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .cat-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .cat-btn .icon { font-size: 24px; }
+  .cat-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(124,131,253,0.05); }
+  .cat-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(124,131,253,0.1); }
+
+  /* ── Article list ── */
+  .article-list { display: flex; flex-direction: column; gap: 2px; }
+
+  .article-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .article-item:last-child { border-bottom: none; }
+
+  .article-num {
+    font-size: 11px;
+    color: var(--text3);
+    min-width: 20px;
+    margin-top: 2px;
+  }
+
+  .article-content { flex: 1; }
+
+  .article-title {
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.5;
+    display: block;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+  }
+
+  .article-title:hover { color: var(--accent); }
+
+  .article-src {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Finance ── */
+  .rate-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rate-row:last-child { border-bottom: none; }
+
+  .rate-flag { font-size: 24px; margin-right: 12px; }
+
+  .rate-name {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+
+  .rate-value {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent3);
+  }
+
+  .rate-sub { font-size: 10px; color: var(--text3); }
+
+  /* ── RSS ── */
+  .rss-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rss-item:last-child { border-bottom: none; }
+
+  .rss-domain {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rss-read-btn, .rss-del-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .rss-read-btn { background: rgba(79,195,247,0.08); color: var(--accent); }
+  .rss-read-btn:hover { background: rgba(79,195,247,0.15); }
+  .rss-del-btn { background: rgba(255,107,107,0.08); color: var(--danger); }
+  .rss-del-btn:hover { background: rgba(255,107,107,0.15); }
+
+  .rss-add-form { display: flex; gap: 8px; margin-bottom: 16px; }
+
+  .rss-add-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+  }
+
+  .rss-add-input:focus { border-color: var(--accent); }
+  .rss-add-input::placeholder { color: var(--text3); }
+
+  .rss-add-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* ── Settings ── */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .settings-row:last-child { border-bottom: none; }
+
+  .settings-label {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .settings-sub {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  .toggle-group { display: flex; gap: 4px; }
+
+  .toggle-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn.active {
+    background: rgba(79,195,247,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .settings-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    width: 140px;
+  }
+
+  .settings-input:focus { border-color: var(--accent); }
+
+  .save-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: opacity 0.2s;
+  }
+
+  .save-btn:hover { opacity: 0.9; }
+
+  /* ── Push notification card ── */
+  .push-card {
+    background: linear-gradient(135deg, rgba(79,195,247,0.08), rgba(124,131,253,0.08));
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .push-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .push-desc {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .push-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+
+  .push-btn.enable {
+    background: linear-gradient(135deg, var(--accent3), #22c55e);
+    color: #fff;
+  }
+
+  .push-btn.disable {
+    background: rgba(255,107,107,0.15);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+  }
+
+  /* ── Loading / Empty ── */
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text3);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .loading::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 16px auto 0;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--text3);
+    font-size: 12px;
+  }
+
+  /* ── Pre-formatted text ── */
+  .preformatted {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text2);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .preformatted b { color: var(--text); font-weight: 700; }
+  .preformatted i { color: var(--text3); font-style: italic; }
+  .preformatted a { color: var(--accent); text-decoration: none; }
+  .preformatted a:hover { text-decoration: underline; }
+  .preformatted code { color: var(--accent3); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── Bottom tab bar ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(8,12,24,0.95);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 12px;
+    z-index: 200;
+  }
+
+  .bottom-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+  }
+
+  .bottom-tab .icon { font-size: 20px; }
+  .bottom-tab .label { font-size: 9px; letter-spacing: 0.5px; font-family: var(--font-mono); }
+
+  .bottom-tab.active { color: var(--accent); }
+  .bottom-tab.active .icon { filter: drop-shadow(0 0 6px rgba(79,195,247,0.6)); }
+
+  /* ── Geo button ── */
+  .geo-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(67,233,123,0.08);
+    border: 1px solid rgba(67,233,123,0.25);
+    border-radius: var(--radius-sm);
+    color: var(--accent3);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 16px;
+    width: 100%;
+    transition: all 0.2s;
+  }
+
+  .geo-btn:hover { background: rgba(67,233,123,0.15); }
+
+  /* ── Detail panel ── */
+  .detail-panel {
+    display: none;
+    margin-top: 16px;
+  }
+
+  .detail-panel.open { display: block; animation: fadeIn 0.3s ease; }
+
+  .section-divider {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 20px 0 12px;
+    position: relative;
+  }
+
+  .section-divider::before, .section-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-divider::before { left: 0; }
+  .section-divider::after { right: 0; }
+
+  /* Holidays */
+  .holiday-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .holiday-item:last-child { border-bottom: none; }
+
+  .holiday-date {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 48px;
+  }
+
+  .holiday-name { font-size: 12px; color: var(--text2); }
+
+  /* Space articles */
+  .space-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .space-item:last-child { border-bottom: none; }
+
+  .space-title {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+
+  .space-src { font-size: 10px; color: var(--text3); margin-bottom: 8px; }
+
+  .space-link {
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+  }
+
+  .space-link:hover { text-decoration: underline; }
+
+  /* Time display */
+  .time-big {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding: 20px 0;
+    letter-spacing: -1px;
+  }
+
+  .time-city { text-align: center; font-size: 12px; color: var(--text3); }
+
+  /* Forecast row */
+  .forecast-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .forecast-row:last-child { border-bottom: none; }
+  .forecast-day { font-size: 12px; color: var(--text2); min-width: 70px; }
+  .forecast-emoji { font-size: 20px; }
+  .forecast-desc { font-size: 11px; color: var(--text3); flex: 1; text-align: center; }
+  .forecast-temps { font-size: 13px; font-weight: 700; color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Sky<span>Pulse</span></div>
+    <div class="header-time" id="headerTime">--:--</div>
+  </div>
+
+  <!-- Top nav -->
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchSection('weather')">🌤 ПОГОДА</button>
+    <button class="nav-btn" onclick="switchSection('news')">📰 НОВОСТИ</button>
+    <button class="nav-btn" onclick="switchSection('finance')">📈 ФИНАНСЫ</button>
+    <button class="nav-btn" onclick="switchSection('space')">🚀 КОСМОС</button>
+    <button class="nav-btn" onclick="switchSection('calendar')">🗓 КАЛЕНДАРЬ</button>
+    <button class="nav-btn" onclick="switchSection('rss')">📡 RSS</button>
+    <button class="nav-btn" onclick="switchSection('settings')">⚙️ НАСТРОЙКИ</button>
+  </div>
+
+  <!-- WEATHER -->
+  <div id="section-weather" class="section active">
+    <div class="card">
+      <div class="card-title">ПОИСК ГОРОДА</div>
+      <button class="geo-btn" onclick="getGeoWeather()">
+        <span>📍</span> Использовать мою геолокацию
+      </button>
+      <div class="search-wrap">
+        <input class="search-input" id="weatherCity" placeholder="Введите город..." 
+               onkeydown="if(event.key==='Enter') fetchWeather()">
+        <button class="search-btn" onclick="fetchWeather()">→</button>
+      </div>
+    </div>
+
+    <div id="weatherResult"></div>
+  </div>
+
+  <!-- NEWS -->
+  <div id="section-news" class="section">
+    <div class="cat-grid">
+      <button class="cat-btn" onclick="fetchNews('general', this)"><span class="icon">🌍</span>ГЛАВНОЕ</button>
+      <button class="cat-btn" onclick="fetchNews('technology', this)"><span class="icon">💻</span>IT</button>
+      <button class="cat-btn" onclick="fetchNews('business', this)"><span class="icon">💰</span>БИЗНЕС</button>
+      <button class="cat-btn" onclick="fetchNews('sports', this)"><span class="icon">⚽</span>СПОРТ</button>
+      <button class="cat-btn" onclick="fetchNews('science', this)"><span class="icon">🧬</span>НАУКА</button>
+      <button class="cat-btn" onclick="fetchNews('health', this)"><span class="icon">💊</span>ЗДОРОВЬЕ</button>
+      <button class="cat-btn" onclick="fetchNews('auto', this)"><span class="icon">🚗</span>АВТО</button>
+      <button class="cat-btn" onclick="fetchNews('entertainment', this)"><span class="icon">🎬</span>КУЛЬТУРА</button>
+    </div>
+    <div id="newsResult"></div>
+  </div>
+
+  <!-- FINANCE -->
+  <div id="section-finance" class="section">
+    <div class="card">
+      <div class="card-title">КУРСЫ К РУБЛЮ</div>
+      <div id="financeResult"><div class="loading">ЗАГРУЗКА</div></div>
+    </div>
+  </div>
+
+  <!-- SPACE -->
+  <div id="section-space" class="section">
+    <div id="spaceResult"><div class="loading">ЗАГРУЗКА</div></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="section-calendar" class="section">
+    <div class="card">
+      <div class="card-title">ТЕКУЩЕЕ ВРЕМЯ</div>
+      <div class="time-big" id="currentTime">--:--:--</div>
+      <div class="time-city">МЕСТНОЕ ВРЕМЯ</div>
+    </div>
+    <div class="card">
+      <div class="card-title">ПРАЗДНИКИ РФ</div>
+      <div id="calendarResult"><div class="loading">ЗАГРУЗКА</div></div>
+    </div>
+  </div>
+
+  <!-- RSS -->
+  <div id="section-rss" class="section">
+    <div class="card">
+      <div class="card-title">ДОБАВИТЬ ЛЕНТУ</div>
+      <div class="rss-add-form">
+        <input class="rss-add-input" id="rssUrl" placeholder="https://habr.com/ru/rss/all/all/"
+               onkeydown="if(event.key==='Enter') addRss()">
+        <button class="rss-add-btn" onclick="addRss()">+ ДОБАВИТЬ</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">МОИ ЛЕНТЫ</div>
+      <div id="rssList"></div>
+    </div>
+    <div id="rssArticles"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="section-settings" class="section">
+    <!-- Push notifications -->
+    <div class="push-card">
+      <div class="push-title">🔔 PUSH-УВЕДОМЛЕНИЯ</div>
+      <div class="push-desc">
+        Получайте прогноз погоды каждое утро прямо в браузер, даже когда вкладка закрыта.
+      </div>
+      <div id="pushStatus">
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Город для рассылки</div>
+          </div>
+          <input class="settings-input" id="pushCity" placeholder="Москва">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Время уведомления</div>
+            <div class="settings-sub">UTC время</div>
+          </div>
+          <input class="settings-input" id="pushTime" type="time" value="05:00">
+        </div>
+        <button class="push-btn enable" id="pushBtn" onclick="togglePush()">
+          ВКЛЮЧИТЬ УВЕДОМЛЕНИЯ
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ОБЩИЕ НАСТРОЙКИ</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Мой город</div>
+          <div class="settings-sub">Открывается по умолчанию</div>
+        </div>
+        <input class="settings-input" id="homeCity" placeholder="Москва">
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Единицы</div>
+        </div>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="unitMetric" onclick="setUnit('metric')">°C</button>
+          <button class="toggle-btn" id="unitImperial" onclick="setUnit('imperial')">°F</button>
+        </div>
+      </div>
+      <button class="save-btn" onclick="saveSettings()">СОХРАНИТЬ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="bottom-tab active" id="tab-weather" onclick="switchSection('weather')">
+    <span class="icon">🌤</span><span class="label">ПОГОДА</span>
+  </button>
+  <button class="bottom-tab" id="tab-news" onclick="switchSection('news')">
+    <span class="icon">📰</span><span class="label">НОВОСТИ</span>
+  </button>
+  <button class="bottom-tab" id="tab-finance" onclick="switchSection('finance')">
+    <span class="icon">📈</span><span class="label">ФИНАНСЫ</span>
+  </button>
+  <button class="bottom-tab" id="tab-space" onclick="switchSection('space')">
+    <span class="icon">🚀</span><span class="label">КОСМОС</span>
+  </button>
+  <button class="bottom-tab" id="tab-settings" onclick="switchSection('settings')">
+    <span class="icon">⚙️</span><span class="label">НАСТРОЙКИ</span>
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let currentUnits = 'metric';
+let currentCoords = null;
+let pushEnabled = false;
+let vapidKey = '';
+
+// ── Init ───────────────────────────────────────────────────────────────
+async function init() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadSettings();
+  checkPushStatus();
+  fetchVapidKey();
+}
+
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('ru-RU');
+  document.getElementById('headerTime').textContent = t;
+  const ct = document.getElementById('currentTime');
+  if (ct) ct.textContent = t;
+}
+
+// ── Section switching ──────────────────────────────────────────────────
+const SECTIONS = ['weather','news','finance','space','calendar','rss','settings'];
+
+function switchSection(name) {
+  SECTIONS.forEach(s => {
+    document.getElementById('section-'+s).classList.toggle('active', s===name);
+    document.querySelectorAll(`.nav-btn`).forEach((b,i) => {
+      if (b.getAttribute('onclick') === `switchSection('${s}')`) b.classList.toggle('active', s===name);
+    });
+    const tab = document.getElementById('tab-'+s);
+    if (tab) tab.classList.toggle('active', s===name);
+  });
+
+  // Lazy load
+  if (name === 'finance' && !window._financeLoaded) { fetchFinance(); window._financeLoaded = true; }
+  if (name === 'space' && !window._spaceLoaded) { fetchSpace(); window._spaceLoaded = true; }
+  if (name === 'calendar' && !window._calLoaded) { fetchCalendar(); window._calLoaded = true; }
+  if (name === 'rss') loadRssList();
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────
+function showToast(msg, duration=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Weather ────────────────────────────────────────────────────────────
+async function fetchWeather() {
+  const city = document.getElementById('weatherCity').value.trim();
+  if (!city) { showToast('Введите название города'); return; }
+  const el = document.getElementById('weatherResult');
+  el.innerHTML = '<div class="loading">ЗАГРУЗКА</div>';
+
+  try {
+    const res = await fetch(`/api/weather/current?city=${encodeURIComponent(city)}&units=${currentUnits}`);
+    if (!res.ok) { el.innerHTML = '<div class="empty">❌ Город не найден</div>'; return; }
+    const data = await res.json();
+    currentCoords = data.coord;
+    renderWeatherCard(data, el);
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка соединения</div>';
+  }
+}
+
+async function getGeoWeather() {
+  if (!navigator.geolocation) { showToast('Геолокация недоступна'); return; }
+  const el = document.getElementById('weatherResult');
+  el.innerHTML = '<div class="loading">ОПРЕДЕЛЯЮ КООРДИНАТЫ</div>';
+  
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const {latitude: lat, longitude: lon} = pos.coords;
+    try {
+      const res = await fetch(`/api/weather/current/coords?lat=${lat}&lon=${lon}&units=${currentUnits}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      currentCoords = data.coord || {lat, lon};
+      renderWeatherCard(data, el);
+    } catch(e) {
+      el.innerHTML = '<div class="empty">❌ Ошибка получения погоды</div>';
+    }
+  }, () => {
+    el.innerHTML = '<div class="empty">❌ Геолокация запрещена</div>';
+  });
+}
+
+function renderWeatherCard(data, el) {
+  const raw = data.raw || {};
+  const main = raw.main || {};
+  const wind = raw.wind || {};
+  const weather = (raw.weather || [{}])[0];
+  const sys = raw.sys || {};
+
+  const emojiMap = {2:'⛈',3:'🌧',5:'🌧',6:'❄️',7:'🌫',800:'☀️',801:'🌤',802:'⛅',803:'🌥',804:'☁️'};
+  const code = weather.id || 800;
+  let emoji = code === 800 ? '☀️' : code > 800 ? (emojiMap[code]||'☁️') : (emojiMap[Math.floor(code/100)]||'🌈');
+  const unit = currentUnits === 'metric' ? '°C' : '°F';
+  const city = data.name || '';
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="weather-main">
+        <div class="weather-emoji">${emoji}</div>
+        <div class="weather-info">
+          <div class="weather-city">${city}</div>
+          <div class="weather-temp">${Math.round(main.temp||0)}${unit}</div>
+          <div class="weather-desc">${weather.description||''}</div>
+        </div>
+      </div>
+      <div class="weather-grid">
+        <div class="weather-stat">
+          <div class="stat-label">ОЩУЩАЕТСЯ</div>
+          <div class="stat-value">${Math.round(main.feels_like||0)}${unit}</div>
+        </div>
+        <div class="weather-stat">
+          <div class="stat-label">ВЛАЖНОСТЬ</div>
+          <div class="stat-value">${main.humidity||0}%</div>
+        </div>
+        <div class="weather-stat">
+          <div class="stat-label">ВЕТЕР</div>
+          <div class="stat-value">${(wind.speed||0).toFixed(0)} м/с</div>
+        </div>
+        <div class="weather-stat">
+          <div class="stat-label">ДАВЛЕНИЕ</div>
+          <div class="stat-value">${Math.round((main.pressure||1013)*0.75006)} мм</div>
+        </div>
+      </div>
+      <div class="action-grid">
+        <button class="action-btn" onclick="fetchWeatherDetail('forecast')"><span class="icon">📊</span>Прогноз</button>
+        <button class="action-btn" onclick="fetchWeatherDetail('air')"><span class="icon">🌬</span>Воздух</button>
+        <button class="action-btn" onclick="fetchWeatherDetail('clothing')"><span class="icon">👗</span>Одежда</button>
+        <button class="action-btn" onclick="fetchWeatherDetail('chart')"><span class="icon">📈</span>График</button>
+        <button class="action-btn" onclick="fetchWeatherDetail('alerts')"><span class="icon">⚠️</span>Алерты</button>
+        <button class="action-btn" onclick="fetchWeatherDetail('uv')"><span class="icon">🌡</span>UV-индекс</button>
+        <button class="action-btn" onclick="openRadar()"><span class="icon">🌧</span>Радар</button>
+      </div>
+    </div>
+    <div id="detailPanel" class="detail-panel"></div>
+  `;
+}
+
+async function fetchWeatherDetail(type) {
+  if (!currentCoords) { showToast('Сначала загрузите погоду'); return; }
+  const {lat, lon} = currentCoords;
+  const el = document.getElementById('detailPanel');
+  if (!el) return;
+  el.classList.add('open');
+  el.innerHTML = '<div class="loading">ЗАГРУЗКА</div>';
+
+  try {
+    const res = await fetch(`/api/weather/${type}?lat=${lat}&lon=${lon}&units=${currentUnits}`);
+    const data = await res.json();
+    el.innerHTML = `<div class="card"><div class="preformatted">${htmlify(data.formatted)}</div></div>`;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка</div>';
+  }
+}
+
+function openRadar() {
+  if (!currentCoords) { showToast('Сначала загрузите погоду'); return; }
+  const {lat, lon} = currentCoords;
+  window.open(`https://www.rainviewer.com/map.html#${lat}_${lon}_6`, '_blank');
+}
+
+// ── News ───────────────────────────────────────────────────────────────
+async function fetchNews(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const el = document.getElementById('newsResult');
+  el.innerHTML = '<div class="loading">ЗАГРУЗКА</div>';
+
+  try {
+    const res = await fetch(`/api/news/${cat}`);
+    const data = await res.json();
+    const articles = data.articles || [];
+    
+    if (!articles.length) { el.innerHTML = '<div class="empty">Нет статей</div>'; return; }
+    
+    let html = `<div class="card"><div class="card-title">${data.title||'НОВОСТИ'}</div><div class="article-list">`;
+    articles.forEach((a,i) => {
+      html += `
+        <div class="article-item">
+          <div class="article-num">${i+1}</div>
+          <div class="article-content">
+            <a class="article-title" href="${a.link||'#'}" target="_blank">${a.title||'Без заголовка'}</a>
+            <div class="article-src">${a.source_name||'RSS'}</div>
+          </div>
+        </div>`;
+    });
+    html += '</div></div>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка загрузки</div>';
+  }
+}
+
+// ── Finance ────────────────────────────────────────────────────────────
+async function fetchFinance() {
+  const el = document.getElementById('financeResult');
+  try {
+    const res = await fetch('/api/finance/rates');
+    const data = await res.json();
+    const rates = data.rates || {};
+    const rub = rates.RUB || 1;
+    const eur = rub / (rates.EUR || 1);
+    const cny = rub / (rates.CNY || 1);
+
+    el.innerHTML = `
+      <div class="rate-row">
+        <div style="display:flex;align-items:center">
+          <span class="rate-flag">💵</span>
+          <div><div class="rate-name">USD</div><div class="rate-sub">Доллар США</div></div>
+        </div>
+        <div><div class="rate-value">${rub.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
+      </div>
+      <div class="rate-row">
+        <div style="display:flex;align-items:center">
+          <span class="rate-flag">💶</span>
+          <div><div class="rate-name">EUR</div><div class="rate-sub">Евро</div></div>
+        </div>
+        <div><div class="rate-value">${eur.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
+      </div>
+      <div class="rate-row">
+        <div style="display:flex;align-items:center">
+          <span class="rate-flag">🇨🇳</span>
+          <div><div class="rate-name">CNY</div><div class="rate-sub">Юань</div></div>
+        </div>
+        <div><div class="rate-value">${cny.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
+      </div>
+      <div style="text-align:right;margin-top:12px;font-size:10px;color:var(--text3)">
+        Обновлено: ${new Date().toLocaleTimeString('ru-RU')}
+      </div>
+    `;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка</div>';
+  }
+}
+
+// ── Space ──────────────────────────────────────────────────────────────
+async function fetchSpace() {
+  const el = document.getElementById('spaceResult');
+  try {
+    const res = await fetch('/api/space/news?limit=6');
+    const data = await res.json();
+    const articles = data.articles || [];
+    
+    let html = `<div class="card"><div class="card-title">🚀 ПОСЛЕДНИЕ СОБЫТИЯ</div>`;
+    articles.forEach(a => {
+      html += `
+        <div class="space-item">
+          <div class="space-title">${a.title||''}</div>
+          <div class="space-src">${a.news_site||''}</div>
+          <a class="space-link" href="${a.url||'#'}" target="_blank">→ ЧИТАТЬ ПОЛНОСТЬЮ</a>
+        </div>`;
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка загрузки</div>';
+  }
+}
+
+// ── Calendar ───────────────────────────────────────────────────────────
+async function fetchCalendar() {
+  const el = document.getElementById('calendarResult');
+  try {
+    const res = await fetch('/api/calendar/holidays');
+    const data = await res.json();
+    const holidays = data.holidays || [];
+    const now = new Date();
+    const upcoming = holidays.filter(h => new Date(h.date) >= now).slice(0,7);
+    
+    let html = '';
+    upcoming.forEach(h => {
+      const d = new Date(h.date);
+      const dd = d.toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'});
+      html += `
+        <div class="holiday-item">
+          <div class="holiday-date">${dd}</div>
+          <div class="holiday-name">${h.localName||h.name}</div>
+        </div>`;
+    });
+    el.innerHTML = html || '<div class="empty">Нет данных</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка</div>';
+  }
+}
+
+// ── RSS ────────────────────────────────────────────────────────────────
+async function loadRssList() {
+  const el = document.getElementById('rssList');
+  try {
+    const res = await fetch('/api/rss/feeds');
+    const data = await res.json();
+    const feeds = data.feeds || [];
+    
+    if (!feeds.length) {
+      el.innerHTML = '<div class="empty">Нет добавленных лент</div>';
+      return;
+    }
+    
+    let html = '';
+    feeds.forEach((url, i) => {
+      const domain = url.replace(/https?:\/\//, '').split('/')[0];
+      html += `
+        <div class="rss-item">
+          <div class="rss-domain">📡 ${domain}</div>
+          <button class="rss-read-btn" onclick="readRss(${i})">ЧИТАТЬ</button>
+          <button class="rss-del-btn" onclick="deleteRss(${i})">✕</button>
+        </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка</div>';
+  }
+}
+
+async function addRss() {
+  const url = document.getElementById('rssUrl').value.trim();
+  if (!url) return;
+  showToast('Проверяю ленту...');
+  
+  try {
+    const res = await fetch('/api/rss/feeds', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    
+    if (res.ok) {
+      showToast('✅ Лента добавлена!');
+      document.getElementById('rssUrl').value = '';
+      loadRssList();
+    } else {
+      const err = await res.json();
+      showToast('❌ ' + (err.detail || 'Ошибка'));
+    }
+  } catch(e) {
+    showToast('❌ Ошибка соединения');
+  }
+}
+
+async function deleteRss(idx) {
+  try {
+    await fetch(`/api/rss/feeds/${idx}`, {method: 'DELETE'});
+    showToast('Лента удалена');
+    loadRssList();
+    document.getElementById('rssArticles').innerHTML = '';
+  } catch(e) {}
+}
+
+async function readRss(idx) {
+  const el = document.getElementById('rssArticles');
+  el.innerHTML = '<div class="loading">ЗАГРУЗКА</div>';
+  
+  try {
+    const res = await fetch(`/api/rss/feeds/${idx}/read`);
+    const data = await res.json();
+    const articles = data.articles || [];
+    
+    let html = `<div class="card"><div class="card-title">СТАТЬИ</div><div class="article-list">`;
+    articles.forEach((a,i) => {
+      html += `
+        <div class="article-item">
+          <div class="article-num">${i+1}</div>
+          <div class="article-content">
+            <a class="article-title" href="${a.link||'#'}" target="_blank">${a.title||'Без заголовка'}</a>
+            <div class="article-src">${a.published||''}</div>
+          </div>
+        </div>`;
+    });
+    html += '</div></div>';
+    el.innerHTML = html;
+    el.scrollIntoView({behavior: 'smooth'});
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка загрузки</div>';
+  }
+}
+
+// ── Settings ───────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    const s = await res.json();
+    document.getElementById('homeCity').value = s.home_city || '';
+    currentUnits = s.units || 'metric';
+    document.getElementById('unitMetric').classList.toggle('active', currentUnits==='metric');
+    document.getElementById('unitImperial').classList.toggle('active', currentUnits==='imperial');
+    
+    if (s.home_city) {
+      document.getElementById('weatherCity').value = s.home_city;
+      fetchWeather();
+    }
+  } catch(e) {}
+}
+
+function setUnit(unit) {
+  currentUnits = unit;
+  document.getElementById('unitMetric').classList.toggle('active', unit==='metric');
+  document.getElementById('unitImperial').classList.toggle('active', unit==='imperial');
+}
+
+async function saveSettings() {
+  const homeCity = document.getElementById('homeCity').value.trim();
+  
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({home_city: homeCity, units: currentUnits})
+    });
+    
+    if (res.ok) {
+      showToast('✅ Настройки сохранены');
+    } else {
+      const err = await res.json();
+      showToast('❌ ' + (err.detail || 'Ошибка'));
+    }
+  } catch(e) {
+    showToast('❌ Ошибка');
+  }
+}
+
+// ── Push notifications ─────────────────────────────────────────────────
+async function fetchVapidKey() {
+  try {
+    const res = await fetch('/api/push/vapid-public-key');
+    const d = await res.json();
+    vapidKey = d.key || '';
+  } catch(e) {}
+}
+
+async function checkPushStatus() {
+  try {
+    const res = await fetch('/api/push/status');
+    const d = await res.json();
+    pushEnabled = d.subscribed;
+    updatePushBtn();
+    if (d.city) document.getElementById('pushCity').value = d.city;
+    if (d.time) document.getElementById('pushTime').value = d.time;
+  } catch(e) {}
+}
+
+function updatePushBtn() {
+  const btn = document.getElementById('pushBtn');
+  if (!btn) return;
+  if (pushEnabled) {
+    btn.textContent = 'ОТКЛЮЧИТЬ УВЕДОМЛЕНИЯ';
+    btn.className = 'push-btn disable';
+  } else {
+    btn.textContent = 'ВКЛЮЧИТЬ УВЕДОМЛЕНИЯ';
+    btn.className = 'push-btn enable';
+  }
+}
+
+async function togglePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    showToast('Push не поддерживается браузером');
+    return;
+  }
+
+  if (pushEnabled) {
+    await fetch('/api/push/subscribe', {method: 'DELETE'});
+    pushEnabled = false;
+    updatePushBtn();
+    showToast('Уведомления отключены');
+    return;
+  }
+
+  if (!vapidKey) { showToast('VAPID ключ не настроен'); return; }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { showToast('Разрешение отклонено'); return; }
+
+  try {
+    const reg = await navigator.serviceWorker.register('/static/sw.js');
+    await navigator.serviceWorker.ready;
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey)
+    });
+
+    const city = document.getElementById('pushCity').value.trim();
+    const time = document.getElementById('pushTime').value;
+
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({subscription: sub.toJSON(), city, notify_time: time})
+    });
+
+    pushEnabled = true;
+    updatePushBtn();
+    showToast('✅ Уведомления включены!');
+  } catch(e) {
+    showToast('❌ Ошибка: ' + e.message);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function htmlify(text) {
+  if (!text) return '';
+  // Convert telegram HTML tags to safe HTML
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '<LTLT>')
+    .replace(/>/g, '<GTGT>')
+    .replace(/&amp;/g, '&')
+    .replace(/<LTLT>b<GTGT>/g, '<b>')
+    .replace(/<LTLT>\/b<GTGT>/g, '</b>')
+    .replace(/<LTLT>i<GTGT>/g, '<i>')
+    .replace(/<LTLT>\/i<GTGT>/g, '</i>')
+    .replace(/<LTLT>code<GTGT>/g, '<code>')
+    .replace(/<LTLT>\/code<GTGT>/g, '</code>')
+    .replace(/<LTLT>a href='([^']+)'<GTGT>(.*?)<LTLT>\/a<GTGT>/g, "<a href='$1' target='_blank'>$2</a>");
+}
+
+// ── Start ──────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

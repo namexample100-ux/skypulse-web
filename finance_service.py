@@ -57,13 +57,13 @@ class FinanceService:
         eur_rub = usd_rub / eur_usd if eur_usd else 0
         cny_rub = usd_rub / cny_usd if cny_usd else 0
 
-        text = "📈 <b>Финансовый Пульс: Курсы валют</b>\n\n"
-        text += f"💵 <b>USD:</b> <code>{usd_rub:.2f} ₽</code>\n"
-        text += f"💶 <b>EUR:</b> <code>{eur_rub:.2f} ₽</code>\n"
-        text += f"🇨🇳 <b>CNY:</b> <code>{cny_rub:.2f} ₽</code>\n\n"
+        text = "📈 Финансовый Пульс: Курсы валют\n\n"
+        text += f"💵 USD: {usd_rub:.2f} ₽\n"
+        text += f"💶 EUR: {eur_rub:.2f} ₽\n"
+        text += f"🇨🇳 CNY: {cny_rub:.2f} ₽\n\n"
         
-        text += f"<i>Обновлено: {datetime.now().strftime('%H:%M')}</i>\n"
-        text += "<i>Данные предоставлены ExchangeRate-API</i>"
+        text += f"Обновлено: {datetime.now().strftime('%H:%M')}\n"
+        text += "Данные предоставлены ExchangeRate-API"
         return text
 
     async def close(self):

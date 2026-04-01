@@ -1,7 +1,8 @@
-aiogram
+fastapi
+uvicorn[standard]
 aiohttp
-python-dotenv
 feedparser
-beautifulsoup4
-lxml
-cerebras-cloud-sdk
+pywebpush
+cryptography
+pydantic
+python-dotenv

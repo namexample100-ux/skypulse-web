@@ -54,12 +54,12 @@ class RSSService:
     def format_feed(self, title: str, entries: List[Dict]) -> str:
         """Форматирование новостей из ленты в текст."""
         if not entries:
-            return f"📡 <b>{title}</b>\n\nНичего не найдено или лента пуста."
+            return f"📡 {title}\n\nНичего не найдено или лента пуста."
 
-        text = f"📡 <b>RSS: {title}</b>\n\n"
+        text = f"📡 RSS: {title}\n\n"
         for i, entry in enumerate(entries, 1):
             text += f"{i}. <a href='{entry['link']}'>{entry['title']}</a>\n"
-            text += f"   <i>{entry['published']}</i>\n\n"
+            text += f"   {entry['published']}\n\n"
         
         return text
 

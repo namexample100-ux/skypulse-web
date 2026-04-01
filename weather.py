@@ -19,11 +19,11 @@ WEATHER_EMOJI = {
 }
 
 AQI_LABELS = {
-    1: ("🟢 Отличное", "Воздух чистый, идеально для прогулок"),
-    2: ("🟡 Хорошее", "Допустимый уровень загрязнения"),
-    3: ("🟠 Умеренное", "Чувствительным людям лучше ограничить прогулки"),
-    4: ("🔴 Плохое", "Рекомендуется оставаться в помещении"),
-    5: ("🟣 Опасное", "Серьёзная угроза здоровью!"),
+    1: (" Отличное", "Воздух чистый, идеально для прогулок"),
+    2: (" Хорошее", "Допустимый уровень загрязнения"),
+    3: (" Умеренное", "Чувствительным людям лучше ограничить прогулки"),
+    4: (" Плохое", "Рекомендуется оставаться в помещении"),
+    5: (" Опасное", "Серьёзная угроза здоровью!"),
 }
 
 WIND_DIRECTIONS = [
@@ -167,10 +167,10 @@ class WeatherService:
         sunset = _ts_to_time(sys["sunset"], tz) if "sunset" in sys else "—"
 
         lines = [
-            f'{emoji} <b>{data["name"]}, {sys.get("country", "")}</b>',
-            f'<i>{w["description"].capitalize()}</i>',
+            f'{emoji} {data["name"]}, {sys.get("country", "")}',
+            f'{w["description"].capitalize()}',
             "",
-            f'🌡 Температура: <b>{m["temp"]:.0f}{temp_unit}</b>',
+            f'🌡 Температура: {m["temp"]:.0f}{temp_unit}',
             f'🤔 Ощущается: {m["feels_like"]:.0f}{temp_unit}',
             f'📊 Мин / Макс: {m["temp_min"]:.0f}° / {m["temp_max"]:.0f}°',
             f'💧 Влажность: {m["humidity"]}%',
@@ -196,7 +196,7 @@ class WeatherService:
             day_key = dt.strftime("%d.%m (%a)")
             days.setdefault(day_key, []).append(item)
 
-        lines = [f'📊 <b>Прогноз — {city.get("name", "")}</b>', ""]
+        lines = [f'📊 Прогноз — {city.get("name", "")}', ""]
         
         # Поддержка единиц
         temp_unit = "°"
@@ -221,9 +221,9 @@ class WeatherService:
             main_desc = max(desc_counts, key=desc_counts.get)  # type: ignore
 
             lines.append(
-                f'{emoji_for_day} <b>{day_key}</b>  '
+                f'{emoji_for_day} {day_key}  '
                 f'{t_min:.0f}{temp_unit}…{t_max:.0f}{temp_unit}  '
-                f'<i>{main_desc}</i>'
+                f'{main_desc}'
             )
 
             # Подробности по 3 часа (макс. 4 записи на день для краткости)
@@ -249,15 +249,15 @@ class WeatherService:
 
         label, advice = AQI_LABELS.get(aqi, ("⚪ Нет данных", ""))
 
-        title = f"🌬 <b>Качество воздуха — {city_name}</b>" if city_name else "🌬 <b>Качество воздуха</b>"
+        title = f"🌬 Качество воздуха — {city_name}" if city_name else "🌬 Качество воздуха"
         lines = [
             title,
-            f"Индекс AQI: <b>{aqi}/5</b> — {label}",
-            f"<i>{advice}</i>",
+            f"Индекс AQI: {aqi}/5 — {label}",
+            f"{advice}",
             "",
-            "📋 <b>Загрязнители (мкг/м³):</b>",
-            f'  PM2.5: <b>{comp.get("pm2_5", 0):.0f}</b>',
-            f'  PM10:  <b>{comp.get("pm10", 0):.0f}</b>',
+            "📋 Загрязнители (мкг/м³):",
+            f'  PM2.5: {comp.get("pm2_5", 0):.0f}',
+            f'  PM10:  {comp.get("pm10", 0):.0f}',
             f'  CO:    {comp.get("co", 0):.0f}',
             f'  NO₂:   {comp.get("no2", 0):.0f}',
             f'  O₃:    {comp.get("o3", 0):.0f}',
@@ -280,32 +280,32 @@ class WeatherService:
         has_rain = 200 <= weather_id < 600
         has_snow = 600 <= weather_id < 700
 
-        lines = [f'👗 <b>Что надеть — {data["name"]}</b>', ""]
+        lines = [f'👗 Что надеть — {data["name"]}', ""]
 
         # Верхняя одежда по температуре
         if feels <= -20:
-            lines.append("🧥 <b>Пуховик / шуба</b>")
+            lines.append("🧥 Пуховик / шуба")
             lines.append("   Термобельё, тёплые штаны, валенки")
             lines.append("   🧣 Шарф + 🧤 варежки + 🎿 шапка-ушанка")
         elif feels <= -10:
-            lines.append("🧥 <b>Тёплая куртка / пуховик</b>")
+            lines.append("🧥 Тёплая куртка / пуховик")
             lines.append("   Свитер, тёплые брюки, зимние ботинки")
             lines.append("   🧣 Шарф + 🧤 перчатки + 🧢 тёплая шапка")
         elif feels <= 0:
-            lines.append("🧥 <b>Зимняя куртка</b>")
+            lines.append("🧥 Зимняя куртка")
             lines.append("   Кофта/свитер, джинсы, ботинки")
             lines.append("   🧤 Перчатки + 🧢 шапка")
         elif feels <= 10:
-            lines.append("🧥 <b>Демисезонная куртка</b>")
+            lines.append("🧥 Демисезонная куртка")
             lines.append("   Лёгкий свитер, брюки, кроссовки")
         elif feels <= 18:
-            lines.append("🧥 <b>Лёгкая куртка / ветровка</b>")
+            lines.append("🧥 Лёгкая куртка / ветровка")
             lines.append("   Рубашка/лонгслив, джинсы")
         elif feels <= 25:
-            lines.append("👕 <b>Футболка / рубашка</b>")
+            lines.append("👕 Футболка / рубашка")
             lines.append("   Лёгкие брюки / джинсы, кеды")
         else:
-            lines.append("👕 <b>Лёгкая футболка / майка</b>")
+            lines.append("👕 Лёгкая футболка / майка")
             lines.append("   Шорты, сандалии, 🕶 очки")
             lines.append("   🧴 Солнцезащитный крем!")
 
@@ -313,13 +313,13 @@ class WeatherService:
 
         # Дождь / снег
         if has_rain:
-            lines.append("☔ <b>Возьмите зонт!</b> Ожидаются осадки")
+            lines.append("☔ Возьмите зонт! Ожидаются осадки")
         if has_snow:
-            lines.append("❄️ <b>Снег!</b> Утеплитесь и наденьте нескользящую обувь")
+            lines.append("❄️ Снег! Утеплитесь и наденьте нескользящую обувь")
 
         # Сильный ветер
         if wind_speed >= 10:
-            lines.append(f"💨 <b>Сильный ветер ({wind_speed:.0f} м/с)</b> — наденьте ветрозащиту")
+            lines.append(f"💨 Сильный ветер ({wind_speed:.0f} м/с) — наденьте ветрозащиту")
         elif wind_speed >= 6:
             lines.append(f"💨 Ветрено ({wind_speed:.0f} м/с) — учтите при выборе одежды")
 
@@ -333,7 +333,7 @@ class WeatherService:
         lat = abs(coord.get("lat", 50))
         clouds = data.get("clouds", {}).get("all", 0)
         tz = data.get("timezone", 0)
-        dt_now = datetime.fromtimestamp(data["dt"], tz=timezone(timedelta(seconds=tz)))
+        dt_now = datetime.now(timezone.utc) + timedelta(seconds=tz)
         sys = data.get("sys", {})
 
         # Оценка высоты солнца
@@ -365,33 +365,33 @@ class WeatherService:
 
         # Определяем уровень
         if uv_int <= 2:
-            level = "🟢 Низкий"
+            level = " Низкий"
             advice = "Защита не требуется. Наслаждайтесь прогулкой!"
             bar = "▓░░░░"
         elif uv_int <= 5:
-            level = "🟡 Умеренный"
+            level = " Умеренный"
             advice = "Носите очки, используйте крем SPF 30+"
             bar = "▓▓░░░"
         elif uv_int <= 7:
-            level = "🟠 Высокий"
+            level = " Высокий"
             advice = "Головной убор + крем SPF 50. Избегайте солнца 11-16ч"
             bar = "▓▓▓░░"
         elif uv_int <= 10:
-            level = "🔴 Очень высокий"
+            level = " Очень высокий"
             advice = "Избегайте солнца! Крем SPF 50+, закрытая одежда"
             bar = "▓▓▓▓░"
         else:
-            level = "🟣 Экстремальный"
+            level = " Экстремальный"
             advice = "Оставайтесь в помещении! Максимальная защита"
             bar = "▓▓▓▓▓"
 
         lines = [
-            f'🌡 <b>UV-индекс — {data["name"]}</b>',
+            f'🌡 UV-индекс — {data["name"]}',
             "",
-            f'<code>[{bar}]</code>  <b>{uv_int}</b> из 11+',
+            f'[{bar}]  {uv_int} из 11+',
             f'{level}',
             "",
-            f'💡 <i>{advice}</i>',
+            f'💡 {advice}',
             "",
             f'☁️ Облачность: {clouds}%  (снижает UV на {int(clouds * 0.7)}%)',
             f'🕐 Местное время: {dt_now.strftime("%H:%M")}',
@@ -426,12 +426,12 @@ class WeatherService:
         temp_unit = "°" if units == "metric" else "°F"
 
         lines = [
-            f'📈 <b>Температура 24ч — {city.get("name", "")}</b>',
+            f'📈 Температура 24ч — {city.get("name", "")}',
             "",
-            f'<code>{chart}</code>',
-            f'<code>{"".join(t.ljust(1) for t in times)}</code>  ч',
+            f'{chart}',
+            f'{"".join(t.ljust(1) for t in times)}  ч',
             "",
-            f'🔺 Макс: <b>{t_max:.0f}{temp_unit}</b>  🔻 Мин: <b>{t_min:.0f}{temp_unit}</b>',
+            f'🔺 Макс: {t_max:.0f}{temp_unit}  🔻 Мин: {t_min:.0f}{temp_unit}',
             "",
         ]
 
@@ -463,17 +463,17 @@ class WeatherService:
             diff_str = f'на {abs(diff):.0f}{temp_unit} ' + ("теплее" if diff > 0 else "холоднее")
             
         lines = [
-            f'🏙 <b>Сравнение: {d1["name"]} vs {d2["name"]}</b>',
+            f'🏙 Сравнение: {d1["name"]} vs {d2["name"]}',
             "",
-            f'📍 <b>{d1["name"]}</b>:',
+            f'📍 {d1["name"]}:',
             f'   {emoji1} {m1["temp"]:.0f}{temp_unit}, {w1["description"]}',
             f'   🌬 {d1.get("wind", {}).get("speed", 0):.0f} {speed_unit}',
             "",
-            f'📍 <b>{d2["name"]}</b>:',
+            f'📍 {d2["name"]}:',
             f'   {emoji2} {m2["temp"]:.0f}{temp_unit}, {w2["description"]}',
             f'   🌬 {d2.get("wind", {}).get("speed", 0):.0f} {speed_unit}',
             "",
-            f'⚖️ В <b>{d1["name"]}</b> {diff_str}, чем в <b>{d2["name"]}</b>.',
+            f'⚖️ В {d1["name"]} {diff_str}, чем в {d2["name"]}.',
         ]
         return "\n".join(lines)
 
@@ -510,14 +510,14 @@ class WeatherService:
         emoji = _weather_emoji(main_w["id"])
         
         lines = [
-            f'📅 <b>Погода на {target_date} — {city.get("name", "")}</b>',
-            f'<i>{main_w["description"].capitalize()}</i>',
+            f'📅 Погода на {target_date} — {city.get("name", "")}',
+            f'{main_w["description"].capitalize()}',
             "",
-            f'{emoji} Температура: <b>{t_min:.0f}°…{t_max:.0f}{temp_unit}</b>',
+            f'{emoji} Температура: {t_min:.0f}°…{t_max:.0f}{temp_unit}',
             f'🌬 Ветер: {mid_day.get("wind", {}).get("speed", 0):.0f} {speed_unit}',
             f'💧 Влажность: {mid_day["main"]["humidity"]}%',
             "",
-            "<b>Подробно по часам:</b>"
+            "Подробно по часам:"
         ]
         
         for e in day_entries:
@@ -546,28 +546,28 @@ class WeatherService:
             # 1. Ветер
             wind_speed = item.get("wind", {}).get("speed", 0)
             if wind_speed >= 15:
-                alerts.append(f"<b>⚠️ Штормовой ветер!</b>\n   {time_str}: {wind_speed:.0f} м/с. Опасно!")
+                alerts.append(f"⚠️ Штормовой ветер!\n   {time_str}: {wind_speed:.0f} м/с. Опасно!")
             elif wind_speed >= 10:
-                alerts.append(f"<b>💨 Сильный ветер</b>\n   {time_str}: {wind_speed:.0f} м/с.")
+                alerts.append(f"💨 Сильный ветер\n   {time_str}: {wind_speed:.0f} м/с.")
 
             # 2. Осадки
             w = item["weather"][0]
             w_id = w["id"]
             if w_id in [502, 503, 504, 522]: # Сильный дождь
-                alerts.append(f"<b>🌊 Сильный ливень</b>\n   {time_str}: {w['description']}")
+                alerts.append(f"🌊 Сильный ливень\n   {time_str}: {w['description']}")
             elif w_id in [602, 622]: # Сильный снег
-                alerts.append(f"<b>❄️ Сильный снегопад</b>\n   {time_str}: {w['description']}")
+                alerts.append(f"❄️ Сильный снегопад\n   {time_str}: {w['description']}")
             elif w_id in [201, 202, 211, 212]: # Гроза
-                alerts.append(f"<b>⛈ Гроза</b>\n   {time_str}: {w['description']}")
+                alerts.append(f"⛈ Гроза\n   {time_str}: {w['description']}")
 
             # 3. Резкие перепады температуры
             curr_temp = item["main"]["temp"]
             if prev_temp is not None:
                 diff = curr_temp - prev_temp
                 if diff <= -7:
-                    alerts.append(f"<b>📉 Резкое похолодание!</b>\n   К {dt.strftime('%H:%M')} температура упадет на {abs(diff):.0f}° за 3 часа.")
+                    alerts.append(f"📉 Резкое похолодание!\n   К {dt.strftime('%H:%M')} температура упадет на {abs(diff):.0f}° за 3 часа.")
                 elif diff >= 7:
-                    alerts.append(f"<b>📈 Резкое потепление</b>\n   К {dt.strftime('%H:%M')} температура вырастет на {diff:.0f}° за 3 часа.")
+                    alerts.append(f"📈 Резкое потепление\n   К {dt.strftime('%H:%M')} температура вырастет на {diff:.0f}° за 3 часа.")
             
             prev_temp = curr_temp
 
@@ -575,7 +575,7 @@ class WeatherService:
         # Но для простоты сейчас просто объединим уникальные по тексту или оставим всё
         
         if not alerts:
-            return f"<b>✅ Опасных погодных явлений в ближайшие 48ч не ожидается.</b>\nГород: {city.get('name', '')}"
+            return f"✅ Опасных погодных явлений в ближайшие 48ч не ожидается.\nГород: {city.get('name', '')}"
 
         # Ограничим количество алертов, чтобы не спамить
         unique_alerts = []
@@ -587,11 +587,11 @@ class WeatherService:
                 seen.add(alert_type)
 
         lines = [
-            f"<b>⚠️ Внимание! Прогноз алертов — {city.get('name', '')}</b>",
+            f"⚠️ Внимание! Прогноз алертов — {city.get('name', '')}",
             "",
             "\n\n".join(unique_alerts[:5]), # Топ 5 самых важных
             "",
-            "<i>Будьте осторожны на улице!</i>"
+            "Будьте осторожны на улице!"
         ]
         return "\n".join(lines)
 
@@ -616,13 +616,13 @@ class WeatherService:
         emoji = wmo_emoji.get(code, "🌈")
         
         lines = [
-            f"🛡 <b>{city_name} (Резервный источник)</b>",
-            "<i>Данные получены через Open-Meteo</i>",
+            f"🛡 {city_name} (Резервный источник)",
+            "Данные получены через Open-Meteo",
             "",
-            f"🌡 Температура: <b>{temp:.1f}°C</b>",
+            f"🌡 Температура: {temp:.1f}°C",
             f"💨 Ветер: {wind:.1f} км/ч",
             f"Состояние: {emoji}",
             "",
-            "⚠️ <i>Этот источник используется как временная замена OpenWeatherMap.</i>"
+            "⚠️ Этот источник используется как временная замена OpenWeatherMap."
         ]
         return "\n".join(lines)

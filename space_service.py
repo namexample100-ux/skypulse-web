@@ -35,7 +35,7 @@ class SpaceService:
         if not articles:
             return "🚀 Пока нет свежих новостей из глубин космоса."
 
-        text = "🚀 <b>Космический Пульс: Последние события</b>\n\n"
+        text = "🚀 Космический Пульс: Последние события\n\n"
         for art in articles:
             title = art.get("title", "Без названия")
             url = art.get("url", "#")
@@ -46,11 +46,11 @@ class SpaceService:
             if len(summary) > 150:
                 summary = summary[:147] + "..."
             
-            text += f"🔹 <b>{title}</b>\n"
-            text += f"<i>Источник: {source}</i>\n"
+            text += f"🔹 {title}\n"
+            text += f"Источник: {source}\n"
             text += f"🔗 <a href='{url}'>Читать полностью</a>\n\n"
         
-        text += "<i>Данные предоставлены Spaceflight News API</i>"
+        text += "Данные предоставлены Spaceflight News API"
         return text
 
     async def close(self):

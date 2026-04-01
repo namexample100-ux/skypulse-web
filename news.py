@@ -3,7 +3,6 @@
 import logging
 import asyncio
 from rss_service import RSSService
-from ai_service import AIService
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ RSS_CHANNELS = {
     ],
     # 🎬 Культура (Legacy)
     "entertainment": [
-        ("Kino.mail", "https://kino.mail.ru/rss"),
+        ("Lenta.ru (Культура)", "https://lenta.ru/rss/articles/culture"),
     ],
     # 🧬 Наука (Legacy)
     "science": [
@@ -54,14 +53,13 @@ RSS_CHANNELS = {
     ],
     # 💊 Здоровье (Legacy)
     "health": [
-        ("Lifehacker (Здоровье)", "https://lifehacker.ru/tag/zdorove/feed/"),
+        ("Lenta.ru (Из жизни)", "https://lenta.ru/rss/articles/life"),
     ]
 }
 
 class NewsService:
     def __init__(self):
         self.rss = RSSService()
-        self.ai = AIService()
 
     async def close(self):
         await self.rss.close()
@@ -109,7 +107,8 @@ class NewsService:
 
     async def _fetch_source(self, name: str, url: str) -> list | None:
         """Вспомогательный метод для получения и пометки новостей от конкретного источника."""
-        log.info(f"📰 Запрос к {name}...")
+        # Чтение RSS отключено, чтобы не забивать логи, но при ошибках оставим без эмодзи
+        # log.info(f"Читаю RSS: {name}...")
         data = await self.rss.fetch_feed(url)
         if data:
             # Добавляем метку источника прямо в статью
@@ -125,7 +124,7 @@ class NewsService:
 
         articles = data["articles"]
         
-        lines = [f"<b>{category_title}</b>", ""]
+        lines = [f"{category_title}", ""]
         
         for i, item in enumerate(articles, 1):
             title = item.get("title", "Без заголовка")
@@ -136,30 +135,8 @@ class NewsService:
             title = title.replace("\xa0", " ").strip()
             
             lines.append(f"{i}. <a href='{link}'>{title}</a>")
-            lines.append(f"   <i>Источник: {src}</i>") # Теперь пишем источник под каждой новостью
+            lines.append(f"   Источник: {src}") # Теперь пишем источник под каждой новостью
             lines.append("")
         
         return "\n".join(lines)
 
-    async def format_news_summarized(self, data: dict, category_title: str) -> str:
-        """Форматирует новости и добавляет AI-саммари."""
-        if not data or not data.get("articles"):
-            return "❌ Не удалось получить новости."
-
-        articles = data["articles"]
-        # Собираем текстовый блок для суммаризации
-        news_text = "\n".join([f"- {a['title']}" for a in articles])
-        
-        summary = await self.ai.summarize_news(news_text)
-        
-        lines = [f"<b>{category_title} (AI-Сводка)</b>", ""]
-        lines.append(f"🤖 <b>Кратко:</b>\n{summary}")
-        lines.append("")
-        lines.append("<i>Подробнее:</i>")
-        
-        for i, item in enumerate(articles, 1):
-            title = item.get("title", "Без заголовка")
-            link = item.get("link", "#")
-            lines.append(f"{i}. <a href='{link}'>{title}</a>")
-            
-        return "\n".join(lines)

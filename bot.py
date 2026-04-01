@@ -30,7 +30,6 @@ from space_service import SpaceService
 from finance_service import FinanceService
 from calendar_service import CalendarService
 from rss_service import RSSService
-from ai_service import AIService
 
 # ── Логирование ─────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -43,7 +42,6 @@ ss = SpaceService()
 fs = FinanceService()
 cs = CalendarService()
 rs = RSSService()
-ai = AIService()
 router = Router()
 
 # In-memory хранилище избранных: {user_id: [city1, city2, ...]}

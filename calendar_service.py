@@ -46,11 +46,11 @@ class CalendarService:
         if not upcoming:
             return "🗓 На ближайшее время праздников не запланировано."
 
-        text = "🗓 <b>Календарный Пульс: Праздники</b>\n\n"
+        text = "🗓 Календарный Пульс: Праздники\n\n"
         for h in upcoming:
             date_str = datetime.strptime(h['date'], '%Y-%m-%d').strftime('%d.%m')
             name = h.get('localName', h.get('name'))
-            text += f"▪️ <b>{date_str}</b> — {name}\n"
+            text += f"▪️ {date_str} — {name}\n"
         
         return text
 
