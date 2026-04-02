@@ -1431,9 +1431,13 @@ async function saveSettings() {
 async function fetchVapidKey() {
   try {
     const res = await fetch('/api/push/vapid-public-key');
+    if (!res.ok) throw new Error('Ошибка сети');
     const d = await res.json();
     vapidKey = d.key || '';
-  } catch(e) {}
+    if (!vapidKey) console.warn('VAPID ключ пуст в ответе сервера');
+  } catch(e) {
+    console.error('Ошибка загрузки VAPID ключа:', e);
+  }
 }
 
 async function checkPushStatus() {
@@ -1479,7 +1483,7 @@ async function togglePush() {
   if (perm !== 'granted') { showToast('Разрешение отклонено'); return; }
 
   try {
-    const reg = await navigator.serviceWorker.register('/static/sw.js');
+    const reg = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
 
     const sub = await reg.pushManager.subscribe({

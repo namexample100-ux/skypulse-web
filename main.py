@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -113,7 +113,12 @@ async def broadcast_worker():
 # ── Lifespan и FastAPI App ────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup check
+    if VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY:
+        log.info("✅ VAPID Keys loaded successfully.")
+    else:
+        log.warning("⚠️ VAPID Keys NOT LOADED. Push notifications will not work.")
+        
     asyncio.create_task(broadcast_worker())
     yield
     # Shutdown
@@ -157,6 +162,14 @@ async def index():
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "SkyPulse Web"}
+
+@app.get("/sw.js")
+async def serve_sw():
+    return FileResponse("static/sw.js", media_type="application/javascript")
+
+@app.get("/manifest.json")
+async def serve_manifest():
+    return FileResponse("static/manifest.json", media_type="application/json")
 
 # ── Погода
 @app.get("/api/weather/current")
@@ -362,4 +375,6 @@ async def save_settings(req: SettingsRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=(port == 8000))
