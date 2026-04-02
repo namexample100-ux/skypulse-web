@@ -241,11 +241,131 @@
   .weather-main {
     display: flex;
     align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 20px;
+    gap: 20px;
+    margin-bottom: 24px;
   }
 
-  .weather-emoji { font-size: 52px; line-height: 1; }
+  .weather-emoji { 
+    width: 80px; height: 80px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    font-size: 52px;
+  }
+
+  /* ── CSS Neon Icons ── */
+  .n-icon { width: 70px; height: 70px; position: relative; }
+  
+  .n-sun {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #fde047, #f59e0b);
+    border-radius: 50%;
+    position: absolute;
+    top: 17px; left: 17px;
+    box-shadow: 0 0 20px rgba(245,158,11,0.8), inset 0 0 10px #fff;
+    animation: n-pulse 3s infinite alternate;
+  }
+  .n-moon {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    box-shadow: inset -10px -10px 0 0 #e0e7ff;
+    position: absolute;
+    top: 15px; left: 20px;
+    filter: drop-shadow(0 0 15px rgba(224,231,255,0.6));
+    animation: n-float 4s infinite ease-in-out;
+  }
+  .n-cloud {
+    width: 48px; height: 18px;
+    background: linear-gradient(180deg, #f0f9ff, #bae6fd);
+    border-radius: 20px;
+    position: absolute;
+    top: 36px; left: 11px;
+    box-shadow: 0 0 20px rgba(186,230,253,0.6), inset 0 2px 4px rgba(255,255,255,0.8);
+    z-index: 2;
+    animation: n-float 4s infinite ease-in-out;
+  }
+  .n-cloud::before {
+    content: ''; position: absolute;
+    width: 20px; height: 20px;
+    background: #f0f9ff; border-radius: 50%;
+    bottom: 8px; left: 6px;
+  }
+  .n-cloud::after {
+    content: ''; position: absolute;
+    width: 28px; height: 28px;
+    background: #f0f9ff; border-radius: 50%;
+    bottom: 8px; left: 16px;
+  }
+  .n-cloud.dark { background: linear-gradient(180deg, #94a3b8, #475569); box-shadow: 0 0 20px rgba(148,163,184,0.5), inset 0 2px 4px rgba(255,255,255,0.4); }
+  .n-cloud.dark::before, .n-cloud.dark::after { background: #94a3b8; }
+
+  .n-rain {
+    position: absolute;
+    width: 3px; height: 10px;
+    background: #38bdf8;
+    border-radius: 2px;
+    box-shadow: 0 0 10px #38bdf8;
+    top: 55px; left: 24px;
+    animation: n-drop 1s infinite linear;
+  }
+  .n-rain::after {
+    content: ''; position: absolute;
+    width: 3px; height: 10px;
+    background: #2dd4bf; border-radius: 2px;
+    box-shadow: 0 0 10px #2dd4bf;
+    top: -6px; left: 14px;
+    animation: n-drop 1s infinite linear 0.4s;
+  }
+
+  .n-snow {
+    position: absolute;
+    width: 6px; height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #fff;
+    top: 55px; left: 22px;
+    animation: n-drop 1.5s infinite linear;
+  }
+  .n-snow::after {
+    content: ''; position: absolute;
+    width: 5px; height: 5px;
+    background: #fff; border-radius: 50%;
+    box-shadow: 0 0 10px #fff;
+    top: -8px; left: 16px;
+    animation: n-drop 1.5s infinite linear 0.7s;
+  }
+
+  .n-lightning {
+    position: absolute;
+    top: 48px; left: 32px;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 14px solid #fef08a;
+    transform: rotate(-15deg);
+    filter: drop-shadow(0 0 10px #fadd3f);
+    animation: n-flash 2s infinite;
+    z-index: 1;
+  }
+
+  @keyframes n-pulse {
+    from { transform: scale(0.95); box-shadow: 0 0 15px rgba(245,158,11,0.6); }
+    to { transform: scale(1.05); box-shadow: 0 0 30px rgba(245,158,11,1); }
+  }
+  @keyframes n-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  @keyframes n-drop {
+    0% { transform: translateY(-5px); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(20px); opacity: 0; }
+  }
+  @keyframes n-flash {
+    0%, 90%, 100% { opacity: 0; }
+    92%, 96% { opacity: 1; }
+  }
 
   .weather-info { flex: 1; }
 
@@ -1165,6 +1285,33 @@ async function getGeoWeather() {
   });
 }
 
+function getNeonIconHTML(code) {
+  let html = '<div class="n-icon">';
+  
+  if (code === 800) {
+    html += '<div class="n-sun"></div>';
+  } else if (code === 801 || code === 802) {
+    html += '<div class="n-sun" style="top:5px;left:25px;transform:scale(0.8)"></div><div class="n-cloud"></div>';
+  } else if (code === 803 || code === 804) {
+    html += '<div class="n-cloud"></div>';
+  } else if (code >= 200 && code < 300) {
+    html += '<div class="n-cloud dark"></div><div class="n-lightning"></div><div class="n-rain"></div>';
+  } else if (code >= 300 && code < 400) {
+    html += '<div class="n-cloud"></div><div class="n-rain" style="opacity:0.5"></div>';
+  } else if (code >= 500 && code < 600) {
+    html += '<div class="n-cloud dark"></div><div class="n-rain"></div>';
+  } else if (code >= 600 && code < 700) {
+    html += '<div class="n-cloud"></div><div class="n-snow"></div>';
+  } else if (code >= 700 && code < 800) {
+    html += '<div class="n-cloud"></div><div class="n-cloud" style="top:45px;opacity:0.5"></div>';
+  } else {
+    html += '<div class="n-sun"></div>';
+  }
+  
+  html += '</div>';
+  return html;
+}
+
 function renderWeatherCard(data, el) {
   const raw = data.raw || {};
   const main = raw.main || {};
@@ -1172,16 +1319,15 @@ function renderWeatherCard(data, el) {
   const weather = (raw.weather || [{}])[0];
   const sys = raw.sys || {};
 
-  const emojiMap = {2:'⛈',3:'🌧',5:'🌧',6:'❄️',7:'🌫',800:'☀️',801:'🌤',802:'⛅',803:'🌥',804:'☁️'};
   const code = weather.id || 800;
-  let emoji = code === 800 ? '☀️' : code > 800 ? (emojiMap[code]||'☁️') : (emojiMap[Math.floor(code/100)]||'🌈');
+  const neonIcon = getNeonIconHTML(code);
   const unit = currentUnits === 'metric' ? '°C' : '°F';
   const city = data.name || '';
 
   el.innerHTML = `
     <div class="card">
       <div class="weather-main">
-        <div class="weather-emoji">${emoji}</div>
+        <div class="weather-emoji">${neonIcon}</div>
         <div class="weather-info">
           <div class="weather-city">${city}</div>
           <div class="weather-temp">${Math.round(main.temp||0)}${unit}</div>
