@@ -11,9 +11,9 @@ ENV/
 .env
 
 # Data
+# Data
 *.json
 !web_rss.json
-!web_settings.json
 *.db
 *.sqlite-journal
 
