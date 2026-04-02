@@ -1072,6 +1072,7 @@
       <div class="card-title">КУРСЫ К РУБЛЮ</div>
       <div id="financeResult"><div class="loading">ЗАГРУЗКА</div></div>
     </div>
+    <div id="financeDetail" class="detail-panel"></div>
   </div>
 
   <!-- SPACE -->
@@ -1377,10 +1378,70 @@ async function fetchWeatherDetail(type) {
   try {
     const res = await fetch(`/api/weather/${type}?lat=${lat}&lon=${lon}&units=${currentUnits}`);
     const data = await res.json();
-    el.innerHTML = `<div class="card"><div class="preformatted">${htmlify(data.formatted)}</div></div>`;
+    
+    if (type === 'chart' && data.raw && data.raw.list) {
+      el.innerHTML = `<div class="card">${renderWeatherGraph(data.raw.list)}</div>`;
+    } else {
+      el.innerHTML = `<div class="card"><div class="preformatted">${htmlify(data.formatted)}</div></div>`;
+    }
   } catch(e) {
     el.innerHTML = '<div class="empty">❌ Ошибка</div>';
   }
+}
+
+function renderSVGChart(points, labels, minLabel, maxLabel, color = '#38bdf8', fill = 'rgba(56,189,248,0.2)') {
+  const w = 300; const h = 120;
+  const padding = 25; 
+  const minVal = Math.min(...points);
+  const maxVal = Math.max(...points);
+  const range = (maxVal - minVal) || 1;
+  const stepX = w / Math.max(1, (points.length - 1));
+  
+  let d = `M 0,${h} `;
+  const coords = points.map((p, i) => {
+    let x = i * stepX;
+    let y = padding + (h - 2*padding) * (1 - (p - minVal) / range);
+    return {x,y,p,label:labels[i]||''};
+  });
+  
+  d += `M ${coords[0].x},${coords[0].y} `;
+  for(let i=0; i<coords.length-1; i++) {
+    const curr = coords[i];
+    const next = coords[i+1];
+    d += `C ${curr.x + stepX/2},${curr.y} ${next.x - stepX/2},${next.y} ${next.x},${next.y} `;
+  }
+  
+  let fillPath = d + `L ${w},${h} L 0,${h} Z`;
+  let rId = Math.random().toString(36).substring(7);
+  
+  let html = `<svg viewBox="0 -10 ${w} ${h+20}" style="width:100%;height:140px;overflow:visible;filter:drop-shadow(0 4px 10px ${fill});">
+    <defs>
+      <linearGradient id="gf_${rId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.0"/>
+      </linearGradient>
+    </defs>
+    <path d="${fillPath}" fill="url(#gf_${rId})" />
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  `;
+  
+  coords.forEach(c => {
+    html += `<circle cx="${c.x}" cy="${c.y}" r="4" fill="#fff" stroke="${color}" stroke-width="2"/>`;
+    html += `<text x="${c.x}" y="${c.y - 12}" fill="var(--text)" font-size="10" text-anchor="middle" font-weight="800">${c.p.toFixed(1)}</text>`;
+    html += `<text x="${c.x}" y="${h + 15}" fill="var(--text2)" font-size="9" text-anchor="middle">${c.label}</text>`;
+  });
+  return html + `</svg>`;
+}
+
+function renderWeatherGraph(list) {
+  const items = list.slice(0, 8);
+  const points = items.map(e => e.main.temp);
+  const labels = items.map(e => {
+    const d = new Date(e.dt * 1000);
+    return d.getHours() + ':00';
+  });
+  const svg = renderSVGChart(points, labels, '', '', '#fbbf24', 'rgba(251,191,36,0.3)');
+  return `<div class="card-title">ТЕМПЕРАТУРА (24ч)</div><div style="padding:10px 0 20px 0; touch-action: pan-x;">${svg}</div><button class="action-btn" onclick="document.getElementById('detailPanel').classList.remove('open')">Закрыть график</button>`;
 }
 
 function openRadar() {
@@ -1434,24 +1495,24 @@ async function fetchFinance() {
     const cny = rub / (rates.CNY || 1);
 
     el.innerHTML = `
-      <div class="rate-row">
+      <div class="rate-row" onclick="fetchFinanceChart('USD')" style="cursor:pointer">
         <div style="display:flex;align-items:center">
           <span class="rate-flag">💵</span>
-          <div><div class="rate-name">USD</div><div class="rate-sub">Доллар США</div></div>
+          <div><div class="rate-name">USD <span style="font-size:10px; color:var(--text3)">📈</span></div><div class="rate-sub">Доллар США</div></div>
         </div>
         <div><div class="rate-value">${rub.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
       </div>
-      <div class="rate-row">
+      <div class="rate-row" onclick="fetchFinanceChart('EUR')" style="cursor:pointer">
         <div style="display:flex;align-items:center">
           <span class="rate-flag">💶</span>
-          <div><div class="rate-name">EUR</div><div class="rate-sub">Евро</div></div>
+          <div><div class="rate-name">EUR <span style="font-size:10px; color:var(--text3)">📈</span></div><div class="rate-sub">Евро</div></div>
         </div>
         <div><div class="rate-value">${eur.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
       </div>
-      <div class="rate-row">
+      <div class="rate-row" onclick="fetchFinanceChart('CNY')" style="cursor:pointer">
         <div style="display:flex;align-items:center">
           <span class="rate-flag">🇨🇳</span>
-          <div><div class="rate-name">CNY</div><div class="rate-sub">Юань</div></div>
+          <div><div class="rate-name">CNY <span style="font-size:10px; color:var(--text3)">📈</span></div><div class="rate-sub">Юань</div></div>
         </div>
         <div><div class="rate-value">${cny.toFixed(2)}</div><div class="rate-sub" style="text-align:right">₽</div></div>
       </div>
@@ -1461,6 +1522,43 @@ async function fetchFinance() {
     `;
   } catch(e) {
     el.innerHTML = '<div class="empty">❌ Ошибка</div>';
+  }
+}
+
+async function fetchFinanceChart(curr) {
+  const popup = document.getElementById('financeDetail');
+  if (!popup) return;
+  popup.classList.add('open');
+  popup.innerHTML = '<div class="loading">ЗАГРУЗКА ИСТОРИИ (ЦБ РФ)</div>';
+  try {
+    const res = await fetch(`/api/finance/history?currency=${curr}`);
+    const data = await res.json();
+    const history = data.history || [];
+    if (!history.length) throw new Error();
+    
+    // Sort array just in case to be chronological
+    history.sort((a,b) => {
+       const da = a.date.split('/').reverse().join('');
+       const db = b.date.split('/').reverse().join('');
+       return da.localeCompare(db);
+    });
+    
+    const points = history.map(h => h.value);
+    const labels = history.map(h => h.date.substring(0,5)); // DD/MM
+    
+    let color = '#38bdf8';
+    if(points[points.length-1] < points[0]) color = '#ef4444'; 
+    else if(points[points.length-1] > points[0]) color = '#10b981';
+    
+    let rgb = '56,189,248';
+    if (color === '#ef4444') rgb = '239,68,68';
+    else if (color === '#10b981') rgb = '16,185,129';
+    
+    const svg = renderSVGChart(points, labels, '', '', color, `rgba(${rgb},0.3)`);
+    
+    popup.innerHTML = `<div class="card"><div class="card-title">ИСТОРИЯ КУРСА: ${curr} (7 ДНЕЙ)</div><div style="padding:10px 0 20px 0; touch-action: pan-x;">${svg}</div><button class="action-btn" style="margin-top:20px" onclick="document.getElementById('financeDetail').classList.remove('open')">Закрыть график</button></div>`;
+  } catch(e) {
+    popup.innerHTML = `<div class="empty">❌ Ошибка загрузки графика (Источник недоступен)</div><button class="action-btn" onclick="document.getElementById('financeDetail').classList.remove('open')">Закрыть</button>`;
   }
 }
 

@@ -66,6 +66,48 @@ class FinanceService:
         text += "Данные предоставлены ExchangeRate-API"
         return text
 
+    async def get_history(self, currency: str = "USD") -> list | None:
+        """Получить исторические курсы за последние 7 дней (данные ЦБ РФ)."""
+        import xml.etree.ElementTree as ET
+        from datetime import timedelta
+        
+        val_codes = {
+            "USD": "R01235",
+            "EUR": "R01239",
+            "CNY": "R01375"
+        }
+        val_nm_rq = val_codes.get(currency.upper(), "R01235")
+        
+        now = datetime.now()
+        date1 = (now - timedelta(days=9)).strftime("%d/%m/%Y") # Берём запас в 9 дней на случай выходных
+        date2 = now.strftime("%d/%m/%Y")
+        url = f"https://www.cbr.ru/scripts/XML_dynamic.asp?date_req1={date1}&date_req2={date2}&VAL_NM_RQ={val_nm_rq}"
+        
+        try:
+            session = await self._get_session()
+            headers = {"User-Agent": "Mozilla/5.0"}
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    text = await response.text()
+                    root = ET.fromstring(text)
+                    
+                    history = []
+                    for record in root.findall('Record'):
+                        date_str = record.attrib.get('Date', '')
+                        value_str = record.find('Value').text.replace(',', '.')
+                        history.append({
+                            "date": date_str,
+                            "value": float(value_str)
+                        })
+                    # Берем только последние 7 дней из доступных записей
+                    return history[-7:]
+                else:
+                    log.error(f"CBR API Error: {response.status}")
+                    return None
+        except Exception as e:
+            log.error(f"Ошибка получения истории ЦБ РФ: {e}")
+            return None
+
     async def close(self):
         if self.session and not self.session.closed:
             await self.session.close()

@@ -223,7 +223,7 @@ async def weather_chart(lat: float, lon: float, units: str = "metric"):
     data = await ws.get_forecast_by_coords(lat, lon, units=units)
     if not data:
         raise HTTPException(status_code=503, detail="Недоступно")
-    return {"formatted": ws.format_temp_chart(data, units=units)}
+    return {"formatted": ws.format_temp_chart(data, units=units), "raw": data}
 
 @app.get("/api/weather/alerts")
 async def weather_alerts(lat: float, lon: float, units: str = "metric"):
@@ -274,6 +274,13 @@ async def finance_rates():
     if not rates:
         raise HTTPException(status_code=503, detail="Курсы недоступны")
     return {"formatted": fs.format_rates(rates), "rates": rates}
+
+@app.get("/api/finance/history")
+async def finance_history(currency: str = "USD"):
+    history = await fs.get_history(currency)
+    if not history:
+        raise HTTPException(status_code=503, detail="Недоступно")
+    return {"history": history}
 
 # ── Космос
 @app.get("/api/space/news")
