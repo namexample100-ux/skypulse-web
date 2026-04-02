@@ -1460,10 +1460,9 @@ async function readRss(idx) {
 }
 
 // ── Settings ───────────────────────────────────────────────────────────
-async function loadSettings() {
+function loadSettings() {
   try {
-    const res = await fetch('/api/settings');
-    const s = await res.json();
+    const s = JSON.parse(localStorage.getItem('skypulse_settings') || '{"home_city":"","units":"metric"}');
     document.getElementById('homeCity').value = s.home_city || '';
     currentUnits = s.units || 'metric';
     document.getElementById('unitMetric').classList.toggle('active', currentUnits==='metric');
@@ -1482,25 +1481,19 @@ function setUnit(unit) {
   document.getElementById('unitImperial').classList.toggle('active', unit==='imperial');
 }
 
-async function saveSettings() {
+function saveSettings() {
   const homeCity = document.getElementById('homeCity').value.trim();
-  
-  try {
-    const res = await fetch('/api/settings', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({home_city: homeCity, units: currentUnits})
-    });
-    
-    if (res.ok) {
-      showToast('✅ Настройки сохранены');
-    } else {
-      const err = await res.json();
-      showToast('❌ ' + (err.detail || 'Ошибка'));
-    }
-  } catch(e) {
-    showToast('❌ Ошибка');
-  }
+  localStorage.setItem('skypulse_settings', JSON.stringify({
+    home_city: homeCity,
+    units: currentUnits
+  }));
+  showToast('✅ Настройки сохранены локально');
+  // Additionally sync to server (optional but good if needed by other components)
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({home_city: homeCity, units: currentUnits})
+  }).catch(()=>console.log('Skipped server sync'));
 }
 
 // ── Push notifications ─────────────────────────────────────────────────
@@ -1517,14 +1510,34 @@ async function fetchVapidKey() {
 }
 
 async function checkPushStatus() {
+  // Load configuration from localStorage to persist across deep app restarts
+  const pushConfig = JSON.parse(localStorage.getItem('skypulse_push') || '{}');
+  if (pushConfig.city) document.getElementById('pushCity').value = pushConfig.city;
+  if (pushConfig.time) document.getElementById('pushTime').value = pushConfig.time;
+
   try {
-    const res = await fetch('/api/push/status');
-    const d = await res.json();
-    pushEnabled = d.subscribed;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    pushEnabled = !!sub;
+    
+    // Auto-resync to backend. If the backend (Render.com) resets its ephemeral storage, 
+    // it forgets the subscription. We just re-upload the local sub.
+    if (sub && pushConfig.city) {
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          subscription: sub.toJSON(), 
+          city: pushConfig.city, 
+          notify_time: pushConfig.time
+        })
+      }).catch(()=>{});
+    }
+    
     updatePushBtn();
-    if (d.city) document.getElementById('pushCity').value = d.city;
-    if (d.time) document.getElementById('pushTime').value = d.time;
-  } catch(e) {}
+  } catch(e) {
+    console.warn("ServiceWorker check failed", e);
+  }
 }
 
 function updatePushBtn() {
@@ -1545,30 +1558,35 @@ async function togglePush() {
     return;
   }
 
-  if (pushEnabled) {
-    await fetch('/api/push/subscribe', {method: 'DELETE'});
-    pushEnabled = false;
-    updatePushBtn();
-    showToast('Уведомления отключены');
-    return;
-  }
-
-  if (!vapidKey) { showToast('VAPID ключ не настроен'); return; }
-
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') { showToast('Разрешение отклонено'); return; }
-
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.ready;
+
+    if (pushEnabled) {
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe();
+      await fetch('/api/push/subscribe', {method: 'DELETE'}).catch(()=>{});
+      pushEnabled = false;
+      localStorage.removeItem('skypulse_push');
+      updatePushBtn();
+      showToast('Уведомления отключены');
+      return;
+    }
+
+    if (!vapidKey) { showToast('VAPID ключ не настроен (или еще не загружен)'); return; }
+
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Разрешение отклонено'); return; }
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey)
     });
 
-    const city = document.getElementById('pushCity').value.trim();
+    const city = document.getElementById('pushCity').value.trim() || 'Москва';
     const time = document.getElementById('pushTime').value;
+
+    // Save locally
+    localStorage.setItem('skypulse_push', JSON.stringify({city, time}));
 
     await fetch('/api/push/subscribe', {
       method: 'POST',
