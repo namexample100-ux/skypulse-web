@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SkyPulse</title>
 <link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -1007,6 +1009,24 @@
   .forecast-emoji { font-size: 20px; }
   .forecast-desc { font-size: 11px; color: var(--text3); flex: 1; text-align: center; }
   .forecast-temps { font-size: 13px; font-weight: 700; color: var(--text); }
+
+  /* Solid Radar Map with Dark Details */
+  #radarMap {
+    width: 100%;
+    height: 350px;
+    border-radius: var(--radius-sm);
+    margin-top: 15px;
+    z-index: 1;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .leaflet-container { background: #0a0f1e !important; }
+  .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
+  /* No Ghost Grid anymore */
+  #radarMap::after { display: none; }
+  .leaflet-tile-pane { filter: contrast(1.1) brightness(0.9); }
 </style>
 </head>
 <body>
@@ -1444,10 +1464,70 @@ function renderWeatherGraph(list) {
   return `<div class="card-title">ТЕМПЕРАТУРА (24ч)</div><div style="padding:10px 0 20px 0; touch-action: pan-x;">${svg}</div><button class="action-btn" onclick="document.getElementById('detailPanel').classList.remove('open')">Закрыть график</button>`;
 }
 
-function openRadar() {
+async function openRadar() {
   if (!currentCoords) { showToast('Сначала загрузите погоду'); return; }
   const {lat, lon} = currentCoords;
-  window.open(`https://www.rainviewer.com/map.html#${lat}_${lon}_6`, '_blank');
+  const el = document.getElementById('detailPanel');
+  if (!el) return;
+  
+  el.classList.add('open');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">ЖИВОЙ РАДАР ОСАДКОВ</div>
+      <div id="radarMap"></div>
+      <div style="margin-top:15px; font-size:11px; color:var(--text3); text-align:center;">
+        Данные в реальном времени от OpenWeatherMap. Облака и осадки наложены поверх спутника.
+      </div>
+      <button class="action-btn" style="margin-top:20px" onclick="document.getElementById('detailPanel').classList.remove('open')">Закрыть радар</button>
+    </div>
+  `;
+
+  try {
+    // Получаем API ключ через наш новый эндпоинт (или из конфига на бэке)
+    const keyRes = await fetch('/api/config/keys');
+    const keys = await keyRes.json();
+    const owmKey = keys.owm;
+
+    setTimeout(async () => {
+      const map = L.map('radarMap', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([lat, lon], 7);
+      
+      // Настоящая темная подложка
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      // 1. Слой облачности OWM
+      L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${owmKey}`, {
+        maxZoom: 19,
+        opacity: 0.5,
+        zIndex: 5
+      }).addTo(map);
+
+      // 2. Слой осадков OWM
+      L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${owmKey}`, {
+        maxZoom: 19,
+        opacity: 0.8,
+        zIndex: 10
+      }).addTo(map);
+
+      // Неоновый маркер города
+      L.circleMarker([lat, lon], {
+        radius: 10,
+        fillColor: "#5accff",
+        color: "#fff",
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 1,
+        className: 'neon-city-pulse'
+      }).addTo(map);
+
+    }, 200);
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ Ошибка загрузки карты. Проверьте API ключ.</div>';
+  }
 }
 
 // ── News ───────────────────────────────────────────────────────────────

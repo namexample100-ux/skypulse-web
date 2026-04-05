@@ -43,6 +43,8 @@ fs = FinanceService()
 cs = CalendarService()
 rs = RSSService()
 
+from config import OWM_API_KEY
+
 push_subscriptions: dict = {}
 user_settings: dict = {}
 rss_feeds: list = []
@@ -130,6 +132,11 @@ async def lifespan(app: FastAPI):
     await rs.close()
 
 app = FastAPI(title="SkyPulse Web", lifespan=lifespan)
+
+@app.get("/api/config/keys")
+async def get_keys():
+    """Возвращает публично необходимые ключи (только OWM для тайлов)."""
+    return {"owm": OWM_API_KEY}
 
 app.add_middleware(
     CORSMiddleware,
